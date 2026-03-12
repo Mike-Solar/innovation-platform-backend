@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库 - 仅内网访问
+  mysql:
+    image: mysql:8.0
+    container_name: innovation_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: innovation_platform
+      TZ: Asia/Shanghai
+    # 不暴露端口，仅内网访问
+    expose:
+      - "3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./innovation_platform.sql:/docker-entrypoint-initdb.d/init.sql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - innovation_network
+
+  # Redis 缓存 - 仅内网访问
+  redis:
+    image: redis:7-alpine
+    container_name: innovation_redis
+    # 不暴露端口，仅内网访问
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - innovation_network
+
+  # 后端应用 - 仅内网访问（通过frontend代理）
+  app:
+    image: innovation-backend:latest
+    container_name: innovation_app
+    environment:
+      # 数据库配置
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/innovation_platform?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      # Redis 配置
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_DATABASE: 1
+      # MinIO 配置（按需修改）
+      MINIO_URL: http://host.docker.internal:9000
+      MINIO_ACCESSKEY: minioadmin
+      MINIO_SECRETKEY: minioadmin
+      # JWT 配置
+      JWT_SECRET: innovation-platform-secret-key-2024
+      JWT_EXPIRATION: 86400000
+    # 不暴露端口，仅内网访问
+    expose:
+      - "8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - innovation_network
+    restart: unless-stopped
+
+  # 前端应用 - 唯一对外暴露80端口
+  frontend:
+    image: innovation-frontend:latest
+    container_name: innovation_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - app
+    networks:
+      - innovation_network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  innovation_network:
+    driver: bridge
