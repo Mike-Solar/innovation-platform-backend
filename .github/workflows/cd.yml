@@ -1,15 +1,16 @@
 name: CD - Build and Push to GHCR
 
 on:
-  # 每天 UTC 时间 0:00 触发（北京时间 8:00）
-  schedule:
-    - cron: '0 0 * * *'
+  # 当推送 prod 开头的 tag 时触发 (如 prod-20240315, prod-v1.2.3)
+  push:
+    tags:
+      - 'prod*'
   
   # 允许手动触发
   workflow_dispatch:
     inputs:
       tag:
-        description: '自定义镜像标签 (可选，默认使用日期)'
+        description: '自定义镜像标签 (可选，默认使用 latest)'
         required: false
         default: ''
 
@@ -52,9 +53,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
           tags: |
-            type=schedule,pattern={{date 'YYYYMMDD'}}
+            type=ref,event=tag,prefix=,suffix=
             type=sha,prefix=,suffix=,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
             type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' }}
 
       - name: Build and push backend image
@@ -76,9 +77,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}
           tags: |
-            type=schedule,pattern={{date 'YYYYMMDD'}}
+            type=ref,event=tag,prefix=,suffix=
             type=sha,prefix=,suffix=,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
             type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' }}
 
       - name: Build and push frontend image
@@ -95,10 +96,26 @@ jobs:
 
       - name: Output image info
         run: |
+          echo "✅ 构建完成！"
+          echo ""
           echo "📦 后端镜像:"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "  - ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.ref_name }}"
+          fi
           echo "  - ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest"
+          echo "  - ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:sha-$(git rev-parse --short HEAD)"
+          if [ "${{ inputs.tag }}" != "" ]; then
+            echo "  - ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.tag }}"
+          fi
           echo ""
           echo "📦 前端镜像:"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "  - ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.ref_name }}"
+          fi
           echo "  - ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:latest"
+          echo "  - ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:sha-$(git rev-parse --short HEAD)"
+          if [ "${{ inputs.tag }}" != "" ]; then
+            echo "  - ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.tag }}"
+          fi
           echo ""
-          echo "🚀 Watchtower 将在下次检查周期自动拉取更新"
+          echo "🚀 Watchtower 将在 30 秒内自动拉取更新"
