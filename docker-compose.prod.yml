@@ -41,7 +41,7 @@ services:
 
   # 后端应用
   backend:
-    image: ghcr.io/${GITHUB_OWNER:-your-username}/innovation-backend:latest
+    image: ghcr.io/${GITHUB_OWNER:-your-username}/innovation-platform-backend:latest
     container_name: innovation_backend
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/innovation_platform?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
@@ -71,7 +71,7 @@ services:
 
   # 前端应用
   frontend:
-    image: ghcr.io/${GITHUB_OWNER:-your-username}/innovation-backend-frontend:latest
+    image: ghcr.io/${GITHUB_OWNER:-your-username}/innovation-platform-backend-frontend:latest
     container_name: innovation_frontend
     expose:
       - "80"
