@@ -1,6 +1,7 @@
 package com.abajin.innovation.controller;
 
 import com.abajin.innovation.common.Result;
+import com.abajin.innovation.converter.LoginUserDTOConverter;
 import com.abajin.innovation.dto.LoginUserDTO;
 import com.abajin.innovation.entity.User;
 import com.abajin.innovation.service.UserService;
@@ -20,28 +21,6 @@ public class UserController {
     private UserService userService;
 
     /**
-     * 将 User 转换为 LoginUserDTO
-     */
-    private LoginUserDTO convertToLoginUserDTO(User user) {
-        if (user == null) {
-            return null;
-        }
-        LoginUserDTO dto = new LoginUserDTO();
-        dto.setId(user.getId());
-        dto.setUsername(user.getUsername());
-        dto.setRealName(user.getRealName());
-        dto.setEmail(user.getEmail());
-        dto.setPhone(user.getPhone());
-        dto.setRole(user.getRole());
-        dto.setCollegeId(user.getCollegeId());
-        dto.setCollegeName(user.getCollegeName());
-        dto.setStatus(user.getStatus());
-        dto.setCreateTime(user.getCreateTime());
-        dto.setUpdateTime(user.getUpdateTime());
-        return dto;
-    }
-
-    /**
      * 获取当前登录用户信息
      * GET /api/users/me
      * 用于页面刷新后恢复用户信息和角色
@@ -53,7 +32,7 @@ public class UserController {
             if (user == null) {
                 return Result.error("用户不存在");
             }
-            return Result.success(convertToLoginUserDTO(user));
+            return Result.success(LoginUserDTOConverter.convert(user));
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
