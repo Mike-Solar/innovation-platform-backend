@@ -1,3 +1,3 @@
-[submodule "frontend"]
+[submodule "innovation"]
 	path = frontend
-	url = git@github.com:TUST-Open-Source-Club/innovation-platform-front.git
+	url = https://github.com/TUST-Open-Source-Club/innovation-platform-front.git
