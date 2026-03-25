@@ -50,4 +50,20 @@ public interface UserMapper {
      * 查询所有用户
      */
     List<User> selectAll();
+
+    /**
+     * 根据条件查询用户列表
+     */
+    List<User> selectByCondition(
+            @Param("username") String username,
+            @Param("realName") String realName,
+            @Param("role") String role,
+            @Param("collegeId") Long collegeId,
+            @Param("status") Integer status
+    );
+
+    /**
+     * 根据ID删除用户
+     */
+    int deleteById(@Param("id") Long id);
 }

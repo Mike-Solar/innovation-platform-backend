@@ -1,17 +1,22 @@
 package com.abajin.innovation.controller;
 
+import com.abajin.innovation.common.PageResult;
 import com.abajin.innovation.common.Result;
 import com.abajin.innovation.converter.LoginUserDTOConverter;
+import com.abajin.innovation.dto.CreateUserDTO;
 import com.abajin.innovation.dto.LoginUserDTO;
+import com.abajin.innovation.dto.UserQueryDTO;
 import com.abajin.innovation.entity.User;
 import com.abajin.innovation.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 /**
- * 当前用户相关接口（如修改密码、获取当前用户信息）
+ * 用户管理控制器
+ * 包含当前用户相关接口和管理员用户管理接口
  */
 @RestController
 @RequestMapping("/users")
@@ -52,6 +57,112 @@ public class UserController {
             String newPassword = body.get("newPassword");
             userService.changePassword(userId, oldPassword, newPassword);
             return Result.success("密码修改成功", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 获取用户列表（管理员功能）
+     * GET /api/users
+     */
+    @GetMapping
+    public Result<PageResult<User>> getUserList(UserQueryDTO queryDTO) {
+        try {
+            PageResult<User> result = userService.getUserList(queryDTO);
+            return Result.success(result);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 管理员创建用户
+     * POST /api/users
+     */
+    @PostMapping
+    public Result<User> createUser(@Valid @RequestBody CreateUserDTO createUserDTO) {
+        try {
+            User user = userService.createUser(createUserDTO);
+            return Result.success("创建用户成功", user);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 获取用户详情
+     * GET /api/users/{id}
+     */
+    @GetMapping("/{id}")
+    public Result<User> getUserById(@PathVariable Long id) {
+        try {
+            User user = userService.getUserById(id);
+            if (user == null) {
+                return Result.error("用户不存在");
+            }
+            return Result.success(user);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 更新用户信息
+     * PUT /api/users/{id}
+     */
+    @PutMapping("/{id}")
+    public Result<Void> updateUser(@PathVariable Long id, @RequestBody User user) {
+        try {
+            userService.updateUser(id, user);
+            return Result.success("更新用户成功", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 更新用户状态
+     * PUT /api/users/{id}/status
+     */
+    @PutMapping("/{id}/status")
+    public Result<Void> updateUserStatus(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
+        try {
+            Integer status = body.get("status");
+            if (status == null || (status != 0 && status != 1)) {
+                return Result.error("状态值无效，只能是0或1");
+            }
+            userService.updateUserStatus(id, status);
+            return Result.success("状态更新成功", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 重置用户密码
+     * PUT /api/users/{id}/password/reset
+     */
+    @PutMapping("/{id}/password/reset")
+    public Result<Void> resetPassword(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        try {
+            String newPassword = body.get("newPassword");
+            userService.resetPassword(id, newPassword);
+            return Result.success("密码重置成功", null);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 删除用户
+     * DELETE /api/users/{id}
+     */
+    @DeleteMapping("/{id}")
+    public Result<Void> deleteUser(@PathVariable Long id) {
+        try {
+            userService.deleteUser(id);
+            return Result.success("删除用户成功", null);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
