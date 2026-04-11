@@ -349,4 +349,78 @@ public class CasAuthIntegrationTest {
         // 应该返回错误
         assertNotEquals(200, response.getCode());
     }
+
+    @Test
+    @DisplayName("测试根据学号查询用户")
+    void testGetUserByCasUid() throws Exception {
+        // 创建管理员token
+        String adminToken = jwtUtil.generateToken(1L, "admin", Constants.ROLE_SCHOOL_ADMIN);
+
+        // 先创建CAS用户
+        User casUser = new User();
+        casUser.setUsername(MOCK_UID); // 学号作为用户名
+        casUser.setPassword("encoded_password");
+        casUser.setRealName(MOCK_NAME);
+        casUser.setRole(Constants.ROLE_STUDENT);
+        casUser.setAuthType(Constants.AUTH_TYPE_CAS);
+        casUser.setCasUid(MOCK_UID);
+        casUser.setIsProfileComplete(1);
+        casUser.setStatus(Constants.USER_STATUS_ENABLED);
+        casUser.setCreateTime(java.time.LocalDateTime.now());
+        casUser.setUpdateTime(java.time.LocalDateTime.now());
+        userMapper.insert(casUser);
+
+        MvcResult result = mockMvc.perform(get("/users/cas/{casUid}", MOCK_UID)
+                .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String content = result.getResponse().getContentAsString();
+        Result<User> response = objectMapper.readValue(content, 
+                objectMapper.getTypeFactory().constructParametricType(Result.class, User.class));
+        
+        assertEquals(200, response.getCode());
+        assertNotNull(response.getData());
+        assertEquals(MOCK_UID, response.getData().getCasUid());
+        assertEquals(MOCK_NAME, response.getData().getRealName());
+        assertEquals(MOCK_UID, response.getData().getUsername()); // 学号作为用户名
+    }
+
+    @Test
+    @DisplayName("测试用户列表按学号查询")
+    void testGetUserListByCasUid() throws Exception {
+        // 创建管理员token
+        String adminToken = jwtUtil.generateToken(1L, "admin", Constants.ROLE_SCHOOL_ADMIN);
+
+        // 创建测试用户
+        User casUser = new User();
+        casUser.setUsername("2021999");
+        casUser.setPassword("encoded_password");
+        casUser.setRealName("测试学生");
+        casUser.setRole(Constants.ROLE_STUDENT);
+        casUser.setAuthType(Constants.AUTH_TYPE_CAS);
+        casUser.setCasUid("2021999");
+        casUser.setIsProfileComplete(1);
+        casUser.setStatus(Constants.USER_STATUS_ENABLED);
+        casUser.setCreateTime(java.time.LocalDateTime.now());
+        casUser.setUpdateTime(java.time.LocalDateTime.now());
+        userMapper.insert(casUser);
+
+        MvcResult result = mockMvc.perform(get("/users")
+                .header("Authorization", "Bearer " + adminToken)
+                .param("casUid", "2021999"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String content = result.getResponse().getContentAsString();
+        Result<?> response = objectMapper.readValue(content, Result.class);
+        
+        assertEquals(200, response.getCode());
+        // 验证返回结果中包含该用户
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> data = (java.util.Map<String, Object>) response.getData();
+        @SuppressWarnings("unchecked")
+        java.util.List<Object> list = (java.util.List<Object>) data.get("list");
+        assertEquals(1, list.size());
+    }
 }

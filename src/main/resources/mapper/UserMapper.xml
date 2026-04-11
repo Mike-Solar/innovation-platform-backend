@@ -85,6 +85,9 @@
             <if test="realName != null and realName != ''">
                 AND real_name LIKE CONCAT('%', #{realName}, '%')
             </if>
+            <if test="casUid != null and casUid != ''">
+                AND cas_uid = #{casUid}
+            </if>
             <if test="role != null and role != ''">
                 AND role = #{role}
             </if>

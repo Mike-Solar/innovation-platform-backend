@@ -107,6 +107,16 @@ public class UserService {
     }
 
     /**
+     * 根据学号/工号(CAS UID)查询用户
+     * @param casUid CAS用户ID（学号/工号）
+     * @return 用户
+     */
+    @Transactional(readOnly = true)
+    public User getUserByCasUid(String casUid) {
+        return userMapper.selectByCasUid(casUid);
+    }
+
+    /**
      * 修改当前用户密码
      * @param userId 当前用户ID（从 token 获取）
      * @param oldPassword 原密码
@@ -181,6 +191,7 @@ public class UserService {
         List<User> list = userMapper.selectByCondition(
                 queryDTO.getUsername(),
                 queryDTO.getRealName(),
+                queryDTO.getCasUid(),
                 queryDTO.getRole(),
                 queryDTO.getCollegeId(),
                 queryDTO.getStatus()

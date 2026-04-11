@@ -67,6 +67,7 @@ public interface UserMapper {
     List<User> selectByCondition(
             @Param("username") String username,
             @Param("realName") String realName,
+            @Param("casUid") String casUid,
             @Param("role") String role,
             @Param("collegeId") Long collegeId,
             @Param("status") Integer status

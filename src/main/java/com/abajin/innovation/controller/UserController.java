@@ -151,6 +151,23 @@ public class UserController {
     }
 
     /**
+     * 根据学号/工号获取用户详情（管理员功能）
+     * GET /api/users/cas/{casUid}
+     */
+    @GetMapping("/cas/{casUid}")
+    public Result<User> getUserByCasUid(@PathVariable String casUid) {
+        try {
+            User user = userService.getUserByCasUid(casUid);
+            if (user == null) {
+                return Result.error("用户不存在");
+            }
+            return Result.success(user);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
      * 更新用户信息
      * PUT /api/users/{id}
      */
