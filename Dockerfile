@@ -36,6 +36,8 @@ RUN ./mvnw dependency:go-offline -B
 # 复制源代码
 COPY src src
 
+COPY lib lib
+
 # 打包应用（跳过测试）
 RUN ./mvnw clean package -DskipTests -B
 
