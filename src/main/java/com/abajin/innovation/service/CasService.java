@@ -19,6 +19,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.net.ssl.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -111,6 +115,11 @@ public class CasService {
             return validateMockTicket(ticket);
         }
 
+        // 如果配置了忽略SSL验证，设置信任所有证书（仅用于测试环境）
+        if (casConfig.getIgnoreSslValidation() != null && casConfig.getIgnoreSslValidation()) {
+            disableSslVerification();
+        }
+
         // 真实CAS验证
         try {
             Cas20ServiceTicketValidator validator = new Cas20ServiceTicketValidator(
@@ -132,6 +141,42 @@ public class CasService {
             return userInfo;
         } catch (TicketValidationException e) {
             throw new RuntimeException("CAS ticket验证失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 禁用SSL证书验证（仅用于测试环境）
+     */
+    private void disableSslVerification() {
+        try {
+            // 创建一个信任所有证书的TrustManager
+            TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return null;
+                    }
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                    }
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                    }
+                }
+            };
+
+            // 安装所有信任的SSL上下文
+            SSLContext sc = SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+
+            // 创建所有主机名验证通过的HostnameVerifier
+            HostnameVerifier allHostsValid = new HostnameVerifier() {
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            };
+            HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+
+        } catch (Exception e) {
+            throw new RuntimeException("SSL验证禁用失败", e);
         }
     }
 

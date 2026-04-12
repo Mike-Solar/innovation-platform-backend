@@ -58,11 +58,17 @@ services:
       # CAS统一身份认证配置
       CAS_ENABLED: ${CAS_ENABLED:-false}
       CAS_MOCK_MODE: ${CAS_MOCK_MODE:-false}
-      CAS_SERVER_URL_PREFIX: ${CAS_SERVER_URL_PREFIX:-http://ids.wisedu.com.cn:9086/authserver}
-      CAS_SERVER_LOGIN_URL: ${CAS_SERVER_LOGIN_URL:-http://ids.wisedu.com.cn:9086/authserver/login}
+      CAS_SERVER_URL_PREFIX: ${CAS_SERVER_URL_PREFIX:-https://ids.wisedu.com.cn:9086/authserver}
+      CAS_SERVER_LOGIN_URL: ${CAS_SERVER_LOGIN_URL:-https://ids.wisedu.com.cn:9086/authserver/login}
       CAS_CLIENT_HOST_URL: ${CAS_CLIENT_HOST_URL:-http://localhost:8080/api}
+      CAS_IGNORE_SSL_VALIDATION: ${CAS_IGNORE_SSL_VALIDATION:-false}
     expose:
       - "8080"
+    volumes:
+      # 挂载 CAS 证书目录（用于 SSL 验证）
+      - ./certs:/app/certs:ro
+      # 挂载自定义启动脚本
+      - ./docker-entrypoint.sh:/app/docker-entrypoint.sh:ro
     depends_on:
       mysql:
         condition: service_healthy
@@ -71,6 +77,8 @@ services:
     networks:
       - innovation_network
     restart: unless-stopped
+    # 使用自定义启动脚本（导入证书后启动）
+    entrypoint: ["sh", "/app/docker-entrypoint.sh"]
     # Watchtower 监控标签
     labels:
       - "com.centurylinklabs.watchtower.enable=true"

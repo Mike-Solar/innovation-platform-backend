@@ -35,4 +35,9 @@ public class CasConfig {
      * Mock模式（用于本地测试，无需真实CAS服务器）
      */
     private Boolean mockMode = false;
+
+    /**
+     * 忽略SSL证书验证（仅用于测试环境，生产环境请导入正确证书）
+     */
+    private Boolean ignoreSslValidation = false;
 }
