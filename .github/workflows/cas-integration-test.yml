@@ -76,26 +76,30 @@ jobs:
         working-directory: ./frontend
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          # 递归检出子模块（前端代码）
+          submodules: recursive
+          # 获取完整历史以便生成版本号
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Dependencies
+        run: npm i
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-    - name: Install Dependencies
-      run: npm i
+      - name: Run Frontend Unit Tests
+        run: npm run test
 
-    - name: Run Frontend Unit Tests
-      run: npm run test
-
-    - name: Upload Test Results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: frontend-test-results
-        path: |
-          frontend/coverage/
-          frontend/test-results/
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-results
+          path: |
+            frontend/coverage/
+            frontend/test-results/
 
   # 构建验证测试
   build-verification:
