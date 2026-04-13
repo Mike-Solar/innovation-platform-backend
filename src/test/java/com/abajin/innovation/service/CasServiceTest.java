@@ -243,14 +243,21 @@ class CasServiceTest {
         String realName = "不存在的用户";
         String password = "password123";
 
+        // LOCAL 类型未找到
         when(userMapper.selectByRealNameAndAuthType(realName, Constants.AUTH_TYPE_LOCAL))
             .thenReturn(Collections.emptyList());
+        // BOTH 类型也未找到
+        when(userMapper.selectByRealNameAndAuthType(realName, Constants.AUTH_TYPE_BOTH))
+            .thenReturn(Collections.emptyList());
+        // 用户名查找也未找到
+        when(userMapper.selectByUsername(casUid))
+            .thenReturn(null);
 
         Exception exception = assertThrows(RuntimeException.class, () -> {
             casService.mergeAccountWithRealName(casUid, realName, password);
         });
 
-        assertEquals("未找到对应的本地账号", exception.getMessage());
+        assertEquals("未找到对应的本地账号，请检查姓名是否正确或选择\"创建新账号\"", exception.getMessage());
     }
 
     @Test
