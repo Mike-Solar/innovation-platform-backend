@@ -307,11 +307,26 @@ public class CasService {
      */
     @Transactional
     public CasLoginResponse mergeAccountWithRealName(String casUid, String realName, String password) {
-        // 1. 查找本地账号（非CAS账号）
+        // 1. 查找本地账号（按姓名查找，不限制认证类型，只要不是纯CAS账号即可）
         List<User> localUsers = userMapper.selectByRealNameAndAuthType(realName, Constants.AUTH_TYPE_LOCAL);
+        
+        // 如果没找到 LOCAL 类型，尝试查找 BOTH 类型（可能已经合并过）
+        if (localUsers.isEmpty()) {
+            localUsers = userMapper.selectByRealNameAndAuthType(realName, Constants.AUTH_TYPE_BOTH);
+        }
+        
+        // 如果还没找到，尝试根据用户名查找（姓名可能不同，但学号/用户名可能匹配）
+        if (localUsers.isEmpty()) {
+            // 尝试查找用户名与 casUid 相同的本地账号
+            User userByUsername = userMapper.selectByUsername(casUid);
+            if (userByUsername != null && 
+                !Constants.AUTH_TYPE_CAS.equals(userByUsername.getAuthType())) {
+                localUsers = java.util.Collections.singletonList(userByUsername);
+            }
+        }
 
         if (localUsers.isEmpty()) {
-            throw new RuntimeException("未找到对应的本地账号");
+            throw new RuntimeException("未找到对应的本地账号，请检查姓名是否正确或选择\"创建新账号\"");
         }
 
         User localUser = localUsers.get(0);
